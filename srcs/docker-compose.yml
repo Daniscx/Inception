@@ -1,0 +1,86 @@
+networks:
+    dmaestroinception:
+        name: dmaestroinception
+        driver: bridge
+services:
+    nginx:
+        container_name: nginx
+        build: ./requirements/nginx
+        image: nginx
+        ports:
+        - 443:443
+        volumes:
+        - wordpress_data:/var/www/html
+        restart: always
+        networks:
+        - dmaestroinception
+    mariadb:
+        container_name: mariadb
+        build:
+            context: ./requirements/mariadb
+        image: mariadb
+        volumes:
+            - mariadb_data:/var/lib/mysql
+        restart: always
+        networks:
+            - dmaestroinception
+        env_file:
+            - .env
+        environment:
+            MYSQL_DATABASE: ${MYSQL_DATABASE}
+            MYSQL_USER: ${MYSQL_USER}
+        secrets:
+            - MYSQL_PASSWORD
+            - MYSQL_ROOT_PASSWORD
+
+    wordpress:
+        container_name: wordpress
+        build: ./requirements/wordpress
+        image: wordpress
+        depends_on:
+            - mariadb
+        volumes:
+            - wordpress_data:/var/www/html
+        restart: always
+        networks:
+            - dmaestroinception
+        env_file:
+            - .env
+        environment:
+            MYSQL_HOSTNAME: ${WORDPRESS_DB_HOST}
+            MYSQL_NAME: ${WORDPRESS_DB_NAME}
+            MYSQL_USER: ${MYSQL_USER}
+            WORDPRESS_USER : ${WORDPRESS_DB_USER}
+            WORDPRESS_EMAIL : ${WORDPRESS_EMAIL}
+            WORPRESS_ADMIN: ${WORDPRESS_ADMIN_USER}
+            DOMAIN_NAME: ${DOMAIN}
+            WORDPRESS_ADMIN_EMAIL : ${WORPRESS_ADMIN_EMAIL}
+        secrets:
+            - MYSQL_PASSWORD
+            - WORDPRESS_USER_PASS
+            - WORDPRESS_ADMIN_PASS
+volumes:
+    mariadb_data:
+        driver: local
+        driver_opts:
+            type: none
+            device: /home/daniel-maestro-gomez/data/mysql
+            o: bind
+
+    wordpress_data:
+        driver: local
+        driver_opts:
+            type: none
+            device: /home/daniel-maestro-gomez/data/wordpress
+            o: bind
+secrets:
+    MYSQL_ROOT_PASSWORD :
+        file: ../secrets/db_root_password.txt
+    MYSQL_PASSWORD:
+        file: ../secrets/db_password.txt
+    WORDPRESS_USER_PASS :
+        file: ../secrets/wp_user_password.txt
+    WORDPRESS_ADMIN_PASS :
+        file: ../secrets/wp_admin_password.txt
+    
+
